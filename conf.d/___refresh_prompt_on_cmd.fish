@@ -61,60 +61,16 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     bind --preset \n __rpoc_custom_event_enter_pressed
     bind --preset \r __rpoc_custom_event_enter_pressed
 
-    # Backup original prompt functions
+    # Backup original prompt functions by renaming them
     functions -c fish_prompt '__rpoc_orig_fish_prompt'
     functions -c fish_right_prompt '__rpoc_orig_fish_right_prompt'
 
     # Replace original prompt functions with wrapper functions
-    function fish_prompt
-        __rpoc_log "Starting fish_prompt wrapper"
+    functions -e fish_prompt
+    functions -c __rpoc_fish_prompt fish_prompt
 
-        if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_left
-
-            __rpoc_log "Refresh disabled, using backup prompt"
-            echo -n $__rpoc_prompt_backup_left
-        else
-            __rpoc_log "Running original fish_prompt"
-
-            # Run the original prompt function and store its output
-            set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt)
-
-            # Store backup of the prompt
-            set -g __rpoc_prompt_backup_left $prompt_output
-
-            # Output the prompt
-            echo -n $prompt_output
-        end
-
-        __rpoc_log "Finished"
-    end
-
-    function fish_right_prompt
-        __rpoc_log "Running fish_right_prompt wrapper"
-
-        if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_right
-            __rpoc_log "Refresh disabled, using backup prompt"
-            echo -n $__rpoc_prompt_backup_right
-        else
-            __rpoc_log "Running original fish_right_prompt"
-
-            # Run the original prompt function and store its output
-            set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt)
-
-            # Store backup of the prompt
-            set -g __rpoc_prompt_backup_right $prompt_output
-
-            # Output the prompt
-            echo -n $prompt_output
-        end
-
-        __rpoc_log "Running __rpoc_custom_event_post_prompt_rendering"
-
-        # Run custom event after prompt is rendered
-        __rpoc_custom_event_post_prompt_rendering
-
-        __rpoc_log "Finished"
-    end
+    functions -e fish_right_prompt
+    functions -c __rpoc_fish_right_prompt fish_right_prompt
 
     __rpoc_log "Setup complete"
 end
@@ -155,6 +111,58 @@ function __rpoc_custom_event_enter_pressed
 
 end
 
+
+# Wrapper functions for the original prompt functions that are called during
+# prompt rendering as well as re-rendering on refresh.
+function __rpoc_fish_prompt
+    __rpoc_log "Starting fish_prompt wrapper"
+
+    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_left
+
+        __rpoc_log "Refresh disabled, using backup prompt"
+        echo -n $__rpoc_prompt_backup_left
+    else
+        __rpoc_log "Running original fish_prompt"
+
+        # Run the original prompt function and store its output
+        set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt)
+
+        # Store backup of the prompt
+        set -g __rpoc_prompt_backup_left $prompt_output
+
+        # Output the prompt
+        echo -n $prompt_output
+    end
+
+    __rpoc_log "Finished"
+end
+
+function __rpoc_fish_right_prompt
+    __rpoc_log "Running fish_right_prompt wrapper"
+
+    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_right
+        __rpoc_log "Refresh disabled, using backup prompt"
+        echo -n $__rpoc_prompt_backup_right
+    else
+        __rpoc_log "Running original fish_right_prompt"
+
+        # Run the original prompt function and store its output
+        set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt)
+
+        # Store backup of the prompt
+        set -g __rpoc_prompt_backup_right $prompt_output
+
+        # Output the prompt
+        echo -n $prompt_output
+    end
+
+    __rpoc_log "Running __rpoc_custom_event_post_prompt_rendering"
+
+    # Run custom event after prompt is rendered
+    __rpoc_custom_event_post_prompt_rendering
+
+    __rpoc_log "Finished"
+end
 
 # Called by our fish_right_prompt wrapper function after the prompt is fully
 # rendered and before the command is executed.
