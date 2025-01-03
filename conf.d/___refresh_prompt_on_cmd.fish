@@ -271,6 +271,99 @@ end
 
 
 #
+# Command Duration
+#
+
+function __rpoc_cmd_duration_postexec --on-event fish_postexec
+    __rpoc_cmd_duration $CMD_DURATION
+end
+
+function __rpoc_cmd_duration --argument-names seconds
+    # Check if duration display is disabled
+    if __rpoc_is_config_enabled_cmd_duration_disabled
+        return
+    end
+
+    # Only show duration for commands that took longer than 3 seconds
+    if not set -q seconds[1]; or test -z "$seconds"; or test $seconds -lt 3000
+        return
+    end
+
+    # Get prefix from config or use default
+    set -l prefix
+    if set -q rpoc_cmd_duration_prefix
+        set prefix $rpoc_cmd_duration_prefix
+    else
+        set prefix "⌛ took "
+    end
+
+    # Get prefix color from config or use default (normal)
+    set -l prefix_color
+    if set -q rpoc_cmd_duration_prefix_color
+        set prefix_color $rpoc_cmd_duration_prefix_color
+    else
+        set prefix_color normal
+    end
+
+    # Get duration color from config or use default (yellow)
+    set -l duration_color
+    if set -q rpoc_cmd_duration_time_color
+        set duration_color $rpoc_cmd_duration_time_color
+    else
+        set duration_color yellow
+    end
+
+    # Get postfix from config or use default (empty)
+    set -l postfix
+    if set -q rpoc_cmd_duration_postfix
+        set postfix $rpoc_cmd_duration_postfix
+    else
+        set postfix ""
+    end
+
+    # Get postfix color from config or use default (normal)
+    set -l postfix_color
+    if set -q rpoc_cmd_duration_postfix_color
+        set postfix_color $rpoc_cmd_duration_postfix_color
+    else
+        set postfix_color normal
+    end
+
+    set -l duration_str (__rpoc_convert_seconds_to_duration $seconds 0)
+
+    echo ''
+    set_color $prefix_color
+    echo -n $prefix
+    set_color --bold $duration_color
+    echo -n $duration_str
+    set_color $postfix_color
+    echo -n $postfix
+    set_color normal
+end
+
+function __rpoc_convert_seconds_to_duration --argument-names seconds decimals
+    set -q decimals[1]; or set decimals 0
+
+    set -l t (
+        math -s0 "$seconds/3600000" # Hours
+        math -s0 "$seconds/60000"%60 # Minutes
+        math -s$decimals "$seconds/1000"%60
+    )
+
+    set -l duration_str
+    if test $t[1] != 0
+        set duration_str "$t[1]h $t[2]m $t[3]s"
+    else if test $t[2] != 0
+        set duration_str "$t[2]m $t[3]s"
+    else
+        set duration_str "$t[3]s"
+    end
+
+    echo $duration_str
+end
+
+
+#
 # Logging
 #
 
@@ -346,17 +439,27 @@ end
 # that 0 is success and 1 is failure. This allows us to check if it's enabled
 # without a comparison.
 
+
+# rpoc_cmd_duration_disabled is used to disable the command duration display
+function __rpoc_is_config_enabled_cmd_duration_disabled
+    __rpoc_is_config_enabled rpoc_cmd_duration_disabled
+    return $status
+end
+
+
 # rpoc_disable_refresh_left is used to disable the refresh of the left prompt
 function __rpoc_is_config_enabled_disable_refresh_left
     __rpoc_is_config_enabled rpoc_disable_refresh_left
     return $status
 end
 
+
 # rpoc_disable_refresh_right is used to disable the refresh of the right prompt
 function __rpoc_is_config_enabled_disable_refresh_right
     __rpoc_is_config_enabled rpoc_disable_refresh_right
     return $status
 end
+
 
 # Check if a config variable is enabled
 function __rpoc_is_config_enabled --argument-names var_name
@@ -376,6 +479,7 @@ function __rpoc_is_config_enabled --argument-names var_name
             return 1
     end
 end
+
 
 # rpoc_time_prompt_disabled is used to disable the time prompt when no right prompt exists
 function __rpoc_is_config_enabled_time_prompt_disabled
