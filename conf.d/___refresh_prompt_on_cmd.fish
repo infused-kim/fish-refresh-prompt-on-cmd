@@ -52,6 +52,11 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     # Create variable to track if we are in pre-exec mode
     set -g rpoc_is_refreshing 0
 
+    # Create variables to store prompt backups that are used
+    # when rpoc_disable_refresh_left or rpoc_disable_refresh_right is enabled
+    set -g __rpoc_prompt_backup_left ''
+    set -g __rpoc_prompt_backup_right ''
+
     # Bind enter key to custom event function
     bind --preset \n __rpoc_custom_event_enter_pressed
     bind --preset \r __rpoc_custom_event_enter_pressed
@@ -62,21 +67,46 @@ function __rpoc_setup_on_startup --on-event fish_prompt
 
     # Replace original prompt functions with wrapper functions
     function fish_prompt
-        __rpoc_log "Running original fish_prompt: __rpoc_orig_fish_prompt"
+        __rpoc_log "Starting fish_prompt wrapper"
 
-        # Run the original prompt function and pass it the is_refreshing
-        # variable
-        rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt
+        if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_left
+
+            __rpoc_log "Refresh disabled, using backup prompt"
+            echo -n $__rpoc_prompt_backup_left
+        else
+            __rpoc_log "Running original fish_prompt"
+
+            # Run the original prompt function and store its output
+            set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt)
+
+            # Store backup of the prompt
+            set -g __rpoc_prompt_backup_left $prompt_output
+
+            # Output the prompt
+            echo -n $prompt_output
+        end
 
         __rpoc_log "Finished"
     end
 
     function fish_right_prompt
-        __rpoc_log "Running original fish_right_prompt: __rpoc_orig_fish_right_prompt"
+        __rpoc_log "Running fish_right_prompt wrapper"
 
-        # Run the original prompt function and pass it the is_refreshing
-        # variable
-        rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt
+        if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_right
+            __rpoc_log "Refresh disabled, using backup prompt"
+            echo -n $__rpoc_prompt_backup_right
+        else
+            __rpoc_log "Running original fish_right_prompt"
+
+            # Run the original prompt function and store its output
+            set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt)
+
+            # Store backup of the prompt
+            set -g __rpoc_prompt_backup_right $prompt_output
+
+            # Output the prompt
+            echo -n $prompt_output
+        end
 
         __rpoc_log "Running __rpoc_custom_event_post_prompt_rendering"
 
@@ -206,4 +236,42 @@ end
 
 function __rpoc_preexec --on-event fish_preexec
     __rpoc_log "Fired"
+end
+
+#
+# Settings
+#
+# Settings return 0 when enabled and 1 when disabled due to shell convention
+# that 0 is success and 1 is failure. This allows us to check if it's enabled
+# without a comparison.
+
+# rpoc_disable_refresh_left is used to disable the refresh of the left prompt
+function __rpoc_is_config_enabled_disable_refresh_left
+    __rpoc_is_config_enabled rpoc_disable_refresh_left
+    return $status
+end
+
+# rpoc_disable_refresh_right is used to disable the refresh of the right prompt
+function __rpoc_is_config_enabled_disable_refresh_right
+    __rpoc_is_config_enabled rpoc_disable_refresh_right
+    return $status
+end
+
+# Check if a config variable is enabled
+function __rpoc_is_config_enabled --argument-names var_name
+    if not set -q $var_name
+        return 1
+    end
+    set -l value (string lower $$var_name)
+    if test -z "$value" # empty string
+        return 1
+    end
+    switch "$value"
+        case 1 true
+            return 0
+        case 0 false
+            return 1
+        case '*'
+            return 1
+    end
 end
