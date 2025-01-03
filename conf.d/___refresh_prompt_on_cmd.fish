@@ -102,31 +102,6 @@ function __rpoc_setup_on_startup --on-event fish_prompt
 end
 
 
-function __rpoc_setup_for_async_prompt
-    __rpoc_log "Setting up for async prompt"
-
-    # Configure async prompt variables inheritance
-    if set -q async_prompt_inherit_variables
-        if test "$async_prompt_inherit_variables" != all
-            # If it's not 'all', append our variable to the existing array
-            set --append async_prompt_inherit_variables rpoc_is_refreshing
-        end
-    else
-        # Set default list of variables to inherit
-        set -g async_prompt_inherit_variables \
-            CMD_DURATION \
-            fish_bind_mode \
-            pipestatus \
-            SHLVL \
-            status \
-            rpoc_is_refreshing
-    end
-
-    # In addition to this, we also customize the behavior in
-    # `__rpoc_execute_prompt_func`.
-end
-
-
 # Executed whenever the enter key is pressed.
 #
 # Sets our tracking variable `rpoc_is_refreshing` to 1 and asks fish to
