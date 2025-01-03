@@ -36,18 +36,19 @@
 #     fish_right_prompt function finishes)
 
 
-# Don't run if the shell is not interactive
-status is-interactive
-or exit 0
-
-
 # Setup function that is run ONCE when the shell starts up,
 # just before the first prompt is displayed
 function __rpoc_setup_on_startup --on-event fish_prompt
-    __rpoc_log (status current-function) "Starting setup"
 
-    # Removes this function after it runs once, since it only needs to run on startup
+    # Removes this function after it runs once, since it only needs to run on
+    # startup
     functions -e (status current-function)
+
+    # Don't run if the shell is not interactive
+    status is-interactive
+    or exit 0
+
+    __rpoc_log (status current-function) "Starting setup"
 
     # Create variable to track if we are in pre-exec mode
     set -g rpoc_is_refreshing 0
@@ -76,7 +77,11 @@ function __rpoc_setup_on_startup --on-event fish_prompt
         functions -e fish_right_prompt
         functions -c __rpoc_fish_right_prompt fish_right_prompt
     else
-        # If fish_right_prompt doesn't exist, just create our function
+        # If fish_right_prompt doesn't exist, check if the default right
+        # time prompt should be used
+        if not __rpoc_is_config_enabled_time_prompt_disabled
+            functions -c rpoc_fish_right_prompt_time '__rpoc_orig_fish_right_prompt'
+        end
         functions -c __rpoc_fish_right_prompt fish_right_prompt
     end
 
@@ -191,6 +196,81 @@ end
 
 
 #
+# Time Prompt
+#
+
+# Prints `at --:--:--` when rpoc_is_refreshing == 0
+# and `at 18:56:04` when rpoc_is_refreshing == 1
+#
+# Can be customized with the following config variables:
+# set -g rpoc_time_prompt_time_color green
+# set -g rpoc_time_prompt_prefix 'time: '
+# set -g rpoc_time_prompt_prefix_color red
+# set -g rpoc_time_prompt_postfix ' wow ⏰'
+# set -g rpoc_time_prompt_postfix_color magenta
+#
+function rpoc_fish_right_prompt_time
+    # Get prefix from config or use default
+    set -l prefix
+    if set -q rpoc_time_prompt_prefix
+        set prefix $rpoc_time_prompt_prefix
+    else
+        set prefix "at "
+    end
+
+    # Get prefix color from config or use default (normal)
+    set -l prefix_color
+    if set -q rpoc_time_prompt_prefix_color
+        set prefix_color $rpoc_time_prompt_prefix_color
+    else
+        set prefix_color normal
+    end
+
+    # Get time color from config or use default (yellow)
+    set -l time_color
+    if set -q rpoc_time_prompt_time_color
+        set time_color $rpoc_time_prompt_time_color
+    else
+        set time_color yellow
+    end
+
+    # Get postfix from config or use default (empty)
+    set -l postfix
+    if set -q rpoc_time_prompt_postfix
+        set postfix $rpoc_time_prompt_postfix
+    else
+        set postfix ""
+    end
+
+    # Get postfix color from config or use default (normal)
+    set -l postfix_color
+    if set -q rpoc_time_prompt_postfix_color
+        set postfix_color $rpoc_time_prompt_postfix_color
+    else
+        set postfix_color normal
+    end
+
+    if test -n "$rpoc_is_refreshing" -a "$rpoc_is_refreshing" = "1" 2>/dev/null
+        set_color $prefix_color
+        echo -n $prefix
+        set_color --bold $time_color
+        echo -n (date "+%H:%M:%S")
+        set_color $postfix_color
+        echo -n $postfix
+        set_color normal
+    else
+        set_color $prefix_color
+        echo -n $prefix
+        set_color --bold $time_color
+        echo -n "--:--:--"
+        set_color $postfix_color
+        echo -n $postfix
+        set_color normal
+    end
+end
+
+
+#
 # Logging
 #
 
@@ -295,4 +375,10 @@ function __rpoc_is_config_enabled --argument-names var_name
         case '*'
             return 1
     end
+end
+
+# rpoc_time_prompt_disabled is used to disable the time prompt when no right prompt exists
+function __rpoc_is_config_enabled_time_prompt_disabled
+    __rpoc_is_config_enabled rpoc_time_prompt_disabled
+    return $status
 end
