@@ -39,6 +39,10 @@
 #   - After `fish_right_prompt` runs, we set `rpoc_is_refreshing` to 0
 
 
+#
+# Setup
+#
+
 # Setup function that is run ONCE when the shell starts up,
 # just before the first prompt is displayed
 function __rpoc_setup_on_startup --on-event fish_prompt
@@ -98,9 +102,32 @@ function __rpoc_setup_on_startup --on-event fish_prompt
         functions -c __rpoc_fish_right_prompt fish_right_prompt
     end
 
+    __rpoc_setup_compatibility_check
+
     __rpoc_log "Setup complete"
 end
 
+
+function __rpoc_setup_compatibility_check
+    if functions -q __async_prompt_fire
+        __rpoc_log "Setting up for async prompt"
+
+        if not functions -q __async_prompt_orig_fish_prompt
+            echo "ERROR in fish-refresh-prompt-on-cmd: Could not load init due to incompatabilities with fish-async-prompt"
+            echo ""
+            echo "Please make sure..."
+            echo "  - That you are using a version of fish-async-prompt that backs up the original prompt functions. You can use my fork until this feature is integrated into acomagu's version: https://github.com/infused-kim/fish-async-prompt"
+            echo "  - You are loading fish-refresh-prompt-on-cmd AFTER fish-async-prompt"
+        end
+    end
+end
+
+
+
+
+#
+# Prompt refresh on command execution
+#
 
 # Executed whenever the enter key is pressed.
 #
