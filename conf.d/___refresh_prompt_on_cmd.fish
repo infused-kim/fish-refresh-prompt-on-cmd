@@ -53,6 +53,11 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     status is-interactive
     or exit 0
 
+    # Don't run the setup if the module is disabled
+    if __rpoc_is_config_enabled_disabled
+        return
+    end
+
     __rpoc_log (status current-function) "Starting setup"
 
     # Create variable to track if we are in pre-exec mode
