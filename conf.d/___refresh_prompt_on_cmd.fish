@@ -61,16 +61,24 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     bind --preset \n __rpoc_custom_event_enter_pressed
     bind --preset \r __rpoc_custom_event_enter_pressed
 
-    # Backup original prompt functions by renaming them
-    functions -c fish_prompt '__rpoc_orig_fish_prompt'
-    functions -c fish_right_prompt '__rpoc_orig_fish_right_prompt'
+    # Backup and replace prompt functions if they exist
+    if functions -q fish_prompt
+        functions -c fish_prompt '__rpoc_orig_fish_prompt'
+        functions -e fish_prompt
+        functions -c __rpoc_fish_prompt fish_prompt
+    else
+        # If fish_prompt doesn't exist, just create our function
+        functions -c __rpoc_fish_prompt fish_prompt
+    end
 
-    # Replace original prompt functions with wrapper functions
-    functions -e fish_prompt
-    functions -c __rpoc_fish_prompt fish_prompt
-
-    functions -e fish_right_prompt
-    functions -c __rpoc_fish_right_prompt fish_right_prompt
+    if functions -q fish_right_prompt
+        functions -c fish_right_prompt '__rpoc_orig_fish_right_prompt'
+        functions -e fish_right_prompt
+        functions -c __rpoc_fish_right_prompt fish_right_prompt
+    else
+        # If fish_right_prompt doesn't exist, just create our function
+        functions -c __rpoc_fish_right_prompt fish_right_prompt
+    end
 
     __rpoc_log "Setup complete"
 end
@@ -118,14 +126,16 @@ function __rpoc_fish_prompt
     __rpoc_log "Starting fish_prompt wrapper"
 
     if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_left
-
         __rpoc_log "Refresh disabled, using backup prompt"
         echo -n $__rpoc_prompt_backup_left
     else
         __rpoc_log "Running original fish_prompt"
 
-        # Run the original prompt function and store its output
-        set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt)
+        # Run the original prompt function if it exists, otherwise use empty prompt
+        set -l prompt_output
+        if functions -q __rpoc_orig_fish_prompt
+            set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt)
+        end
 
         # Store backup of the prompt
         set -g __rpoc_prompt_backup_left $prompt_output
@@ -146,8 +156,11 @@ function __rpoc_fish_right_prompt
     else
         __rpoc_log "Running original fish_right_prompt"
 
-        # Run the original prompt function and store its output
-        set -l prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt)
+        # Run the original prompt function if it exists, otherwise use empty prompt
+        set -l prompt_output
+        if functions -q __rpoc_orig_fish_right_prompt
+            set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt)
+        end
 
         # Store backup of the prompt
         set -g __rpoc_prompt_backup_right $prompt_output
