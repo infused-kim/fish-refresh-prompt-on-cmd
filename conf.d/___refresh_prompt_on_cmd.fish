@@ -15,6 +15,8 @@
 #     - Once all `fish_prompt` _events_ finish processing, then the prompt
 #       _function_ `fish_prompt` is called
 #     - Once it finishes, the prompt function `fish_right_prompt` is called
+#     - The prompt shows the output of the `fish_prompt` and
+#       `fish_right_prompt` functions
 #
 #   - About the `fish_preexec` and `fish_postexec` events:
 #     - Only fired if the command is not empty
@@ -31,9 +33,10 @@
 #     repaint on enter.
 #   - We also set the variable `rpoc_is_refreshing` to 1 to indicate that we
 #     are in refresh mode.
-#   - We also replace the original prompt functions and then set
-#     `rpoc_is_refreshing` to 0 once the prompt is rendered (after the
-#     fish_right_prompt function finishes)
+#   - We replace the original prompt functions with our wrapper functions that
+#     will be called during prompt rendering as well as re-rendering on
+#     refresh.
+#   - After `fish_right_prompt` runs, we set `rpoc_is_refreshing` to 0
 
 
 # Setup function that is run ONCE when the shell starts up,
@@ -44,7 +47,9 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     # startup
     functions -e (status current-function)
 
-    # Don't run if the shell is not interactive
+    # Don't run the setup if the shell is not interactive, but allow
+    # the rest of the functions to load so that `rpoc_fish_right_prompt_time`
+    # is available even in non-interactive shells
     status is-interactive
     or exit 0
 
@@ -77,11 +82,14 @@ function __rpoc_setup_on_startup --on-event fish_prompt
         functions -e fish_right_prompt
         functions -c __rpoc_fish_right_prompt fish_right_prompt
     else
-        # If fish_right_prompt doesn't exist, check if the default right
-        # time prompt should be used
+        # If fish_right_prompt doesn't exist, use our
+        # `rpoc_fish_right_prompt_time` function as the right prompt, but only
+        # if `rpoc_time_prompt_disabled` is not enabled
         if not __rpoc_is_config_enabled_time_prompt_disabled
             functions -c rpoc_fish_right_prompt_time '__rpoc_orig_fish_right_prompt'
         end
+
+        # Set our wrapper function as the right prompt
         functions -c __rpoc_fish_right_prompt fish_right_prompt
     end
 
@@ -127,6 +135,9 @@ end
 
 # Wrapper functions for the original prompt functions that are called during
 # prompt rendering as well as re-rendering on refresh.
+#
+# In the setup functions these are copied to replace the original `fish_prompt`
+# and `fish_right_prompt` functions.
 function __rpoc_fish_prompt
     __rpoc_log "Starting fish_prompt wrapper"
 
