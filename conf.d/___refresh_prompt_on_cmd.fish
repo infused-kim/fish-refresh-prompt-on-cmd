@@ -65,8 +65,8 @@ function __rpoc_setup_on_startup --on-event fish_prompt
 
     # Create variables to store prompt backups that are used
     # when rpoc_disable_refresh_left or rpoc_disable_refresh_right is enabled
-    set -g __rpoc_prompt_backup_left ''
-    set -g __rpoc_prompt_backup_right ''
+    set -g __rpoc_prompt_backup_fish_prompt ''
+    set -g __rpoc_prompt_backup_right_prompt ''
 
     # Bind enter key to custom event function
     bind --preset \n __rpoc_custom_event_enter_pressed
@@ -99,6 +99,31 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     end
 
     __rpoc_log "Setup complete"
+end
+
+
+function __rpoc_setup_for_async_prompt
+    __rpoc_log "Setting up for async prompt"
+
+    # Configure async prompt variables inheritance
+    if set -q async_prompt_inherit_variables
+        if test "$async_prompt_inherit_variables" != all
+            # If it's not 'all', append our variable to the existing array
+            set --append async_prompt_inherit_variables rpoc_is_refreshing
+        end
+    else
+        # Set default list of variables to inherit
+        set -g async_prompt_inherit_variables \
+            CMD_DURATION \
+            fish_bind_mode \
+            pipestatus \
+            SHLVL \
+            status \
+            rpoc_is_refreshing
+    end
+
+    # In addition to this, we also customize the behavior in
+    # `__rpoc_execute_prompt_func`.
 end
 
 
@@ -146,56 +171,94 @@ end
 function __rpoc_fish_prompt
     __rpoc_log "Starting fish_prompt wrapper"
 
-    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_left
-        __rpoc_log "Refresh disabled, using backup prompt"
-        echo -n $__rpoc_prompt_backup_left
-    else
-        __rpoc_log "Running original fish_prompt"
-
-        # Run the original prompt function if it exists, otherwise use empty prompt
-        set -l prompt_output
-        if functions -q __rpoc_orig_fish_prompt
-            set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_prompt)
-        end
-
-        # Store backup of the prompt
-        set -g __rpoc_prompt_backup_left $prompt_output
-
-        # Output the prompt
-        echo -n $prompt_output
-    end
+    __rpoc_execute_prompt_func "fish_prompt"
 
     __rpoc_log "Finished"
 end
 
+
 function __rpoc_fish_right_prompt
     __rpoc_log "Running fish_right_prompt wrapper"
 
-    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_right
-        __rpoc_log "Refresh disabled, using backup prompt"
-        echo -n $__rpoc_prompt_backup_right
-    else
-        __rpoc_log "Running original fish_right_prompt"
-
-        # Run the original prompt function if it exists, otherwise use empty prompt
-        set -l prompt_output
-        if functions -q __rpoc_orig_fish_right_prompt
-            set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing __rpoc_orig_fish_right_prompt)
-        end
-
-        # Store backup of the prompt
-        set -g __rpoc_prompt_backup_right $prompt_output
-
-        # Output the prompt
-        echo -n $prompt_output
-    end
+    __rpoc_execute_prompt_func "fish_right_prompt"
 
     __rpoc_log "Running __rpoc_custom_event_post_prompt_rendering"
 
+    __rpoc_log "Finished"
+
     # Run custom event after prompt is rendered
     __rpoc_custom_event_post_prompt_rendering
+end
 
-    __rpoc_log "Finished"
+function __rpoc_execute_prompt_func --argument-names prompt_func_name
+
+    # Name of the variable that stores the backup of the prompt
+    set -l prompt_backup_var_name '__rpoc_prompt_backup_'$prompt_func_name
+
+    # Name of the backup prompt function we replaced
+    set -l rpoc_orig_prompt_func_name '__rpoc_orig_'$prompt_func_name
+
+    # Name of the backup prompt function that fish-async-prompt replaced
+    set -l async_prompt_orig_prompt_func_name '__async_prompt_orig_'$prompt_func_name
+
+    # The output of the prompt we will display later
+    set -l prompt_output
+
+    # In refresh mode, but refresh right prompt is disabled...
+    # Show the backup of the prompt
+    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_right
+        __rpoc_log "Refresh disabled, using backup prompt"
+
+        set prompt_output $$prompt_backup_var_name
+
+    # In refresh mode, and using fish-async-prompt..
+    #
+    # fish-async-prompt runs the prompt in a subshell and stores the output
+    # in a file. Then it sends a signal to notify the main shell that the async
+    # process has finished and then the prompt is refreshed.
+    #
+    # But the repaint command in `__rpoc_custom_event_enter_pressed` does not
+    # trigger the `__async_prompt_fire` function that runs the async prompt.
+    #
+    # We also can't run it async because by the time it would finish, the next
+    # command would have been executed and the repaint wouldn't apply to the
+    # pre-command prompt, but to the post-command prompt.
+    #
+    # So, we run and display the original prompt function that
+    # fish-async-prompt replaced (such as the real starfish function).
+    #
+    # Otherwise we would just get the outdated output of the previous async
+    # prompt generation.
+    else if test "$rpoc_is_refreshing" = 1; and functions -q $async_prompt_orig_prompt_func_name
+
+        __rpoc_log "Running original prompt: $async_prompt_orig_prompt_func_name"
+
+        set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing $async_prompt_orig_prompt_func_name)
+
+    else
+        __rpoc_log "Running original prompt: $rpoc_orig_prompt_func_name"
+
+        # Run the original prompt function if it exists, otherwise use empty
+        # prompt.
+        #
+        # If fish-async-prompt is used, this is their prompt function that
+        # displays the result of the async prompt process. Since we are not in
+        # refresh mode, but in "first prompt paint mode", the
+        # `fish-async-prompt` function was already run and the result is in the
+        # tmpdir.
+        if functions -q $rpoc_orig_prompt_func_name
+            set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing $rpoc_orig_prompt_func_name)
+        else
+            set prompt_output ''
+        end
+
+    end
+
+    # Store backup of the prompt
+    set -g $prompt_backup_var_name $prompt_output
+
+    # Output the prompt
+    echo -n $prompt_output
 end
 
 # Called by our fish_right_prompt wrapper function after the prompt is fully
@@ -455,6 +518,11 @@ end
 # that 0 is success and 1 is failure. This allows us to check if it's enabled
 # without a comparison.
 
+# rpoc_disable is used to disable the entire module
+function __rpoc_is_config_enabled_disabled
+    __rpoc_is_config_enabled rpoc_disabled
+    return $status
+end
 
 # rpoc_cmd_duration_disabled is used to disable the command duration display
 function __rpoc_is_config_enabled_cmd_duration_disabled
