@@ -182,8 +182,6 @@ function __rpoc_fish_right_prompt
 
     __rpoc_execute_prompt_func "fish_right_prompt"
 
-    __rpoc_log "Running __rpoc_custom_event_post_prompt_rendering"
-
     __rpoc_log "Finished"
 
     # Run custom event after prompt is rendered
@@ -232,8 +230,7 @@ function __rpoc_execute_prompt_func --argument-names prompt_func_name
     else if test "$rpoc_is_refreshing" = 1; and functions -q $async_prompt_orig_prompt_func_name
 
         __rpoc_log "Running original prompt: $async_prompt_orig_prompt_func_name"
-
-        set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing $async_prompt_orig_prompt_func_name)
+        rpoc_is_refreshing=$rpoc_is_refreshing $async_prompt_orig_prompt_func_name | read -z prompt_output
 
     else
         __rpoc_log "Running original prompt: $rpoc_orig_prompt_func_name"
@@ -247,18 +244,17 @@ function __rpoc_execute_prompt_func --argument-names prompt_func_name
         # `fish-async-prompt` function was already run and the result is in the
         # tmpdir.
         if functions -q $rpoc_orig_prompt_func_name
-            set prompt_output (rpoc_is_refreshing=$rpoc_is_refreshing $rpoc_orig_prompt_func_name)
+            rpoc_is_refreshing=$rpoc_is_refreshing $rpoc_orig_prompt_func_name | read -z prompt_output
         else
             set prompt_output ''
         end
-
     end
 
     # Store backup of the prompt
     set -g $prompt_backup_var_name $prompt_output
 
     # Output the prompt
-    echo -n $prompt_output
+    printf '%s' $prompt_output
 end
 
 # Called by our fish_right_prompt wrapper function after the prompt is fully
