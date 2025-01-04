@@ -92,10 +92,10 @@ function __rpoc_setup_on_startup --on-event fish_prompt
         functions -c __rpoc_fish_right_prompt fish_right_prompt
     else
         # If fish_right_prompt doesn't exist, use our
-        # `rpoc_fish_right_prompt_time` function as the right prompt, but only
+        # `rpoc_time` function as the right prompt, but only
         # if `rpoc_time_prompt_disabled` is not enabled
         if not __rpoc_is_config_enabled__time_prompt_disabled
-            functions -c rpoc_fish_right_prompt_time '__rpoc_orig_fish_right_prompt'
+            functions -c rpoc_time '__rpoc_orig_fish_right_prompt'
         end
 
         # Set our wrapper function as the right prompt
@@ -280,49 +280,49 @@ end
 # and `at 18:56:04` when rpoc_is_refreshing == 1
 #
 # Can be customized with the following config variables:
-# set -g rpoc_time_prompt_time_color green
-# set -g rpoc_time_prompt_prefix 'time: '
-# set -g rpoc_time_prompt_prefix_color red
-# set -g rpoc_time_prompt_postfix ' wow ⏰'
-# set -g rpoc_time_prompt_postfix_color magenta
+# set -g rpoc_time_color green
+# set -g rpoc_time_prefix 'time: '
+# set -g rpoc_time_prefix_color red
+# set -g rpoc_time_postfix ' wow ⏰'
+# set -g rpoc_time_postfix_color magenta
 #
-function rpoc_fish_right_prompt_time
+function rpoc_time
     # Get prefix from config or use default
     set -l prefix
-    if set -q rpoc_time_prompt_prefix
-        set prefix $rpoc_time_prompt_prefix
+    if set -q rpoc_time_prefix
+        set prefix $rpoc_time_prefix
     else
         set prefix "at "
     end
 
     # Get prefix color from config or use default (normal)
     set -l prefix_color
-    if set -q rpoc_time_prompt_prefix_color
-        set prefix_color $rpoc_time_prompt_prefix_color
+    if set -q rpoc_time_prefix_color
+        set prefix_color $rpoc_time_prefix_color
     else
         set prefix_color normal
     end
 
     # Get time color from config or use default (yellow)
     set -l time_color
-    if set -q rpoc_time_prompt_time_color
-        set time_color $rpoc_time_prompt_time_color
+    if set -q rpoc_time_color
+        set time_color $rpoc_time_color
     else
         set time_color yellow
     end
 
     # Get postfix from config or use default (empty)
     set -l postfix
-    if set -q rpoc_time_prompt_postfix
-        set postfix $rpoc_time_prompt_postfix
+    if set -q rpoc_time_postfix
+        set postfix $rpoc_time_postfix
     else
         set postfix ""
     end
 
     # Get postfix color from config or use default (normal)
     set -l postfix_color
-    if set -q rpoc_time_prompt_postfix_color
-        set postfix_color $rpoc_time_prompt_postfix_color
+    if set -q rpoc_time_postfix_color
+        set postfix_color $rpoc_time_postfix_color
     else
         set postfix_color normal
     end
@@ -352,17 +352,25 @@ end
 #
 
 function __rpoc_cmd_duration_postexec --on-event fish_postexec
-    __rpoc_cmd_duration $CMD_DURATION
+    rpoc_cmd_duration $CMD_DURATION
 end
 
-function __rpoc_cmd_duration --argument-names seconds
+function rpoc_cmd_duration --argument-names seconds
     # Check if duration display is disabled
     if __rpoc_is_config_enabled__cmd_duration_disabled
         return
     end
 
-    # Only show duration for commands that took longer than 3 seconds
-    if not set -q seconds[1]; or test -z "$seconds"; or test $seconds -lt 3000
+    # Get minimum duration from config or use default (3000ms)
+    set -l min_duration
+    if set -q rpoc_cmd_duration_min_ms
+        set min_duration $rpoc_cmd_duration_min_ms
+    else
+        set min_duration 3000
+    end
+
+    # Only show duration for long-running commands
+    if not set -q seconds[1]; or test -z "$seconds"; or test $seconds -lt $min_duration
         return
     end
 
@@ -384,8 +392,8 @@ function __rpoc_cmd_duration --argument-names seconds
 
     # Get duration color from config or use default (yellow)
     set -l duration_color
-    if set -q rpoc_cmd_duration_time_color
-        set duration_color $rpoc_cmd_duration_time_color
+    if set -q rpoc_cmd_duration_color
+        set duration_color $rpoc_cmd_duration_color
     else
         set duration_color yellow
     end
