@@ -444,11 +444,12 @@ end
 # Logging
 #
 
-# Logs a message to the debug log file if `__rpoc_debug` is set to `1`.
+# Logs a message to the debug log file if `rpoc_debug_log_enabled` is set to
+# `1`.
 function __rpoc_log --argument-names message
-    if test "$__rpoc_debug" = 1
+    if __rpoc_is_config_enabled_debug_log_enabled
         # Initialize debug log file in XDG cache dir or ~/.cache if not already done
-        if not set -q __rpoc_debug_log
+        if not set -q rpoc_debug_log_path
             set -l cache_dir
             if set -q XDG_CACHE_HOME
                 set cache_dir "$XDG_CACHE_HOME/fish"
@@ -456,11 +457,11 @@ function __rpoc_log --argument-names message
                 set cache_dir "$HOME/.cache/fish"
             end
             mkdir -p "$cache_dir"
-            set -g __rpoc_debug_log "$cache_dir/fish_refresh_prompt_on_cmd.log"
+            set -g rpoc_debug_log_path "$cache_dir/fish_refresh_prompt_on_cmd.log"
         end
 
         set -l prev_func_name (__rpoc_get_prev_func_name)
-        echo (date "+%Y-%m-%d %H:%M:%S") "[$prev_func_name] $message (is_refreshing: $rpoc_is_refreshing)" >> $__rpoc_debug_log
+        echo (date "+%Y-%m-%d %H:%M:%S") "[$prev_func_name] $message (is_refreshing: $rpoc_is_refreshing)" >> $rpoc_debug_log_path
     end
 end
 
@@ -519,6 +520,12 @@ end
 # rpoc_disable is used to disable the entire module
 function __rpoc_is_config_enabled_disabled
     __rpoc_is_config_enabled rpoc_disabled
+    return $status
+end
+
+# rpoc_debug_log_enabled is used to enable the debug logging
+function __rpoc_is_config_enabled_debug_log_enabled
+    __rpoc_is_config_enabled rpoc_debug_log_enabled
     return $status
 end
 
