@@ -58,7 +58,7 @@ function __rpoc_setup_on_startup --on-event fish_prompt
     or exit 0
 
     # Don't run the setup if the module is disabled
-    if __rpoc_is_config_enabled_disabled
+    if __rpoc_is_config_enabled__disabled
         return
     end
 
@@ -94,7 +94,7 @@ function __rpoc_setup_on_startup --on-event fish_prompt
         # If fish_right_prompt doesn't exist, use our
         # `rpoc_fish_right_prompt_time` function as the right prompt, but only
         # if `rpoc_time_prompt_disabled` is not enabled
-        if not __rpoc_is_config_enabled_time_prompt_disabled
+        if not __rpoc_is_config_enabled__time_prompt_disabled
             functions -c rpoc_fish_right_prompt_time '__rpoc_orig_fish_right_prompt'
         end
 
@@ -206,7 +206,7 @@ function __rpoc_execute_prompt_func --argument-names prompt_func_name
 
     # In refresh mode, but refresh right prompt is disabled...
     # Show the backup of the prompt
-    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled_disable_refresh_right
+    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled__disable_refresh_right
         __rpoc_log "Refresh disabled, using backup prompt"
 
         set prompt_output $$prompt_backup_var_name
@@ -357,7 +357,7 @@ end
 
 function __rpoc_cmd_duration --argument-names seconds
     # Check if duration display is disabled
-    if __rpoc_is_config_enabled_cmd_duration_disabled
+    if __rpoc_is_config_enabled__cmd_duration_disabled
         return
     end
 
@@ -447,7 +447,7 @@ end
 # Logs a message to the debug log file if `rpoc_debug_log_enabled` is set to
 # `1`.
 function __rpoc_log --argument-names message
-    if __rpoc_is_config_enabled_debug_log_enabled
+    if __rpoc_is_config_enabled__debug_log_enabled
         # Initialize debug log file in XDG cache dir or ~/.cache if not already done
         if not set -q rpoc_debug_log_path
             set -l cache_dir
@@ -510,6 +510,7 @@ function __rpoc_preexec --on-event fish_preexec
     __rpoc_log "Fired"
 end
 
+
 #
 # Settings
 #
@@ -518,34 +519,44 @@ end
 # without a comparison.
 
 # rpoc_disable is used to disable the entire module
-function __rpoc_is_config_enabled_disabled
+function __rpoc_is_config_enabled__disabled
     __rpoc_is_config_enabled rpoc_disabled
-    return $status
-end
-
-# rpoc_debug_log_enabled is used to enable the debug logging
-function __rpoc_is_config_enabled_debug_log_enabled
-    __rpoc_is_config_enabled rpoc_debug_log_enabled
-    return $status
-end
-
-# rpoc_cmd_duration_disabled is used to disable the command duration display
-function __rpoc_is_config_enabled_cmd_duration_disabled
-    __rpoc_is_config_enabled rpoc_cmd_duration_disabled
     return $status
 end
 
 
 # rpoc_disable_refresh_left is used to disable the refresh of the left prompt
-function __rpoc_is_config_enabled_disable_refresh_left
+function __rpoc_is_config_enabled__disable_refresh_left
     __rpoc_is_config_enabled rpoc_disable_refresh_left
     return $status
 end
 
 
 # rpoc_disable_refresh_right is used to disable the refresh of the right prompt
-function __rpoc_is_config_enabled_disable_refresh_right
+function __rpoc_is_config_enabled__disable_refresh_right
     __rpoc_is_config_enabled rpoc_disable_refresh_right
+    return $status
+end
+
+
+# rpoc_debug_log_enabled is used to enable the debug logging
+function __rpoc_is_config_enabled__debug_log_enabled
+    __rpoc_is_config_enabled rpoc_debug_log_enabled
+    return $status
+end
+
+
+# rpoc_time_prompt_disabled is used to disable the time prompt when no right
+# prompt exists
+function __rpoc_is_config_enabled__time_prompt_disabled
+    __rpoc_is_config_enabled rpoc_time_prompt_disabled
+    return $status
+end
+
+
+# rpoc_cmd_duration_disabled is used to disable the command duration display
+function __rpoc_is_config_enabled__cmd_duration_disabled
+    __rpoc_is_config_enabled rpoc_cmd_duration_disabled
     return $status
 end
 
@@ -567,11 +578,4 @@ function __rpoc_is_config_enabled --argument-names var_name
         case '*'
             return 1
     end
-end
-
-
-# rpoc_time_prompt_disabled is used to disable the time prompt when no right prompt exists
-function __rpoc_is_config_enabled_time_prompt_disabled
-    __rpoc_is_config_enabled rpoc_time_prompt_disabled
-    return $status
 end
