@@ -32,17 +32,18 @@ You can find [detailed instructions on how to set up all three tools below](#ide
 ## Table Of Contents
 
 - [1. Instructions](#1-instructions)
-  - [1.1. Installation](#11-installation)
-  - [1.2. Usage](#12-usage)
-    - [1.2.1. What to expect](#121-what-to-expect)
-    - [1.2.2. What to do if the prompt is not refreshing](#122-what-to-do-if-the-prompt-is-not-refreshing)
-    - [1.2.3. How to enable debug logging](#123-how-to-enable-debug-logging)
-    - [1.2.4. How to configure your prompt to use `rpoc_time`](#124-how-to-configure-your-prompt-to-use-rpoc_time)
-    - [1.2.5. How to change the prompt output when the prompt is refreshing](#125-how-to-change-the-prompt-output-when-the-prompt-is-refreshing)
-    - [1.2.6. How to disable the automatic time right prompt](#126-how-to-disable-the-automatic-time-right-prompt)
-    - [1.2.7. How to disable refreshing on the left or right side](#127-how-to-disable-refreshing-on-the-left-or-right-side)
-    - [1.2.8. How to customize the time prompt](#128-how-to-customize-the-time-prompt)
-    - [1.2.9. How to customize the command duration prompt](#129-how-to-customize-the-command-duration-prompt)
+  - [1.1. Compatibility](#11-compatibility)
+  - [1.2. Installation](#12-installation)
+  - [1.3. Usage](#13-usage)
+    - [1.3.1. What to expect](#131-what-to-expect)
+    - [1.3.2. What to do if the prompt is not refreshing](#132-what-to-do-if-the-prompt-is-not-refreshing)
+    - [1.3.3. How to enable debug logging](#133-how-to-enable-debug-logging)
+    - [1.3.4. How to configure your prompt to use `rpoc_time`](#134-how-to-configure-your-prompt-to-use-rpoc_time)
+    - [1.3.5. How to change the prompt output when the prompt is refreshing](#135-how-to-change-the-prompt-output-when-the-prompt-is-refreshing)
+    - [1.3.6. How to disable the automatic time right prompt](#136-how-to-disable-the-automatic-time-right-prompt)
+    - [1.3.7. How to disable refreshing on the left or right side](#137-how-to-disable-refreshing-on-the-left-or-right-side)
+    - [1.3.8. How to customize the time prompt](#138-how-to-customize-the-time-prompt)
+    - [1.3.9. How to customize the command duration prompt](#139-how-to-customize-the-command-duration-prompt)
 - [2. Ideal setup with starship prompt, fish-async-prompt, and fish-refresh-prompt-on-cmd](#2-ideal-setup-with-starship-prompt-fish-async-prompt-and-fish-refresh-prompt-on-cmd)
   - [2.1. Set up starship prompt](#21-set-up-starship-prompt)
   - [2.2. Set up fish-async-prompt to speed up starship with async magic](#22-set-up-fish-async-prompt-to-speed-up-starship-with-async-magic)
@@ -61,7 +62,19 @@ You can find [detailed instructions on how to set up all three tools below](#ide
 
 ## 1. Instructions
 
-### 1.1. Installation
+### 1.1. Compatibility
+
+This plugin has been tested with fish v3.7.1 as well as v4.0b1 on macOS and Linux. Prior versions may also work, but are not tested.
+
+It has also been tested with the default fish prompt, as well as starship prompt v1.21.1 (and should work with any version).
+
+Other non-async prompts may work, but have not been tested. Async prompts, such as [tide](https://github.com/IlanCosman/tide) or [hydro](https://github.com/jorgebucaran/hydro), have not been tested and are likely to _not_ work due to their async magic.
+
+These prompts likely require adjustments to the prompt code as well as this plugin. Since I don't use these prompts, I am unlikely to make these adjustments myself or accept PRs for them due to the extra burden the maintenance and testing would add.
+
+But please feel free to create a fork with compatibility for other prompts and I would be happy to link to it from this README. The [troubleshooting section](#troubleshooting) below should help you understand how the plugin works and how to make it work with other prompts.
+
+### 1.2. Installation
 
 Install with [fisher](https://github.com/jorgebucaran/fisher):
 
@@ -75,16 +88,15 @@ But it's recommended to pin a specific version to ensure future updates don't br
 fisher install infused-kim/fish-refresh-prompt-on-cmd@vX.Y
 ```
 
-Alternatively, you can install it manually by copying the [conf.d/1000-refresh-prompt-on-cmd.fish](conf.d
-/1000-refresh-prompt-on-cmd.fish) to your `~/.config/fish/conf.d/` directory.
+Alternatively, you can install it manually by copying the [conf.d/_refresh_prompt_on_cmd.fish](conf.d/_refresh_prompt_on_cmd.fish) to your `~/.config/fish/conf.d/` directory.
 
 > [!IMPORTANT]
 > If you are using this plugin together with `fish-async-prompt`, then `fish-refresh-prompt-on-cmd` needs to be loaded _AFTER_ `fish-async-prompt`. The default names of the files, `__async_prompt.fish` and `_refresh_prompt_on_cmd.fish` (notice the `_` vs the `__`), ensure this. But if you need to make sure they are loaded in the correct order.
 
 
-### 1.2. Usage
+### 1.3. Usage
 
-#### 1.2.1. What to expect
+#### 1.3.1. What to expect
 
 Open a new shell to load the plugin and the prompt should start refreshing automatically when you press `enter`.
 
@@ -92,7 +104,7 @@ But it might be hard to notice the difference. If you are using a prompt that sh
 
 You can also execute `sleep 4` to see command duration.
 
-#### 1.2.2. What to do if the prompt is not refreshing
+#### 1.3.2. What to do if the prompt is not refreshing
 
 This plugin should work without any changes with any prompt that uses the `fish_prompt` and `fish_right_prompt` functions.
 
@@ -108,7 +120,7 @@ So, there are few reasons to use another prompt, such as [tide](https://github.c
 
 You can find [detailed instructions on how to set up `starship`, `fish-async-prompt`, and `fish-refresh-prompt-on-cmd` below](#ideal-setup).
 
-#### 1.2.3. How to enable debug logging
+#### 1.3.3. How to enable debug logging
 
 If you wish to debug the plugin, you can enable debug logging with:
 
@@ -123,7 +135,7 @@ Check the [troubleshooting section](#troubleshooting) below for a lot more detai
 > [!IMPORTANT]
 > Please be aware, that when the debug logs are enabled, it might cause the async-prompt to not repaint after the background process finishes. See the [known issues section](#known-issues) for more details and a workaround.
 
-#### 1.2.4. How to configure your prompt to use `rpoc_time`
+#### 1.3.4. How to configure your prompt to use `rpoc_time`
 
 Consult your prompt's documentation on how to add a custom module or prompt item.
 
@@ -145,19 +157,19 @@ You can check what the original prompt function is by running `functions __rpoc_
 
 To better understand how fish prompts, fish-async-prompt and this plugin work, check the [troubleshooting section](#troubleshooting).
 
-#### 1.2.5. How to change the prompt output when the prompt is refreshing
+#### 1.3.5. How to change the prompt output when the prompt is refreshing
 
 In your prompt rendering functions (`fish_prompt` and `fish_right_prompt`), you can check the `rpoc_is_refreshing` variable. It will be `1` when the prompt is refreshing after you press enter and `0` when a regular prompt is rendered.
 
 You can try this with the built-in `rpoc_time` function. Run it with `rpoc_is_refreshing=1 rpoc_time` and `rpoc_is_refreshing=0 rpoc_time` to see the difference.
 
-#### 1.2.6. How to disable the automatic time right prompt
+#### 1.3.6. How to disable the automatic time right prompt
 
 If your shell has no right prompt enabled, then `rpoc_time` is automatically configured as your right prompt.
 
 You can disable this behavior with `set -g rpoc_time_prompt_disabled 1`.
 
-#### 1.2.7. How to disable refreshing on the left or right side
+#### 1.3.7. How to disable refreshing on the left or right side
 
 The prompt is refreshed synchronously before every new command. If your prompt is slow, this might add some latency to your shell.
 
@@ -171,7 +183,7 @@ set -g rpoc_disable_refresh_right 1
 
 For example, if you don't care about refreshing the git state on your prompt and only want to refresh the time, you could put the git state on the left side, the time on the right side, and then disable the left side refresh.
 
-#### 1.2.8. How to customize the time prompt
+#### 1.3.8. How to customize the time prompt
 
 You can customize the time prompt with these settings:
 
@@ -186,7 +198,7 @@ set -g rpoc_time_postfix ''
 set -g rpoc_time_postfix_color normal
 ```
 
-#### 1.2.9. How to customize the command duration prompt
+#### 1.3.9. How to customize the command duration prompt
 
 You can customize the command duration prompt with these settings:
 
