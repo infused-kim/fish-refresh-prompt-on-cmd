@@ -25,9 +25,9 @@ This is particularly annoying when you need to read over the terminal history to
 
 This plugin causes the prompt to be repainted before a new command is executed.
 
-It should work with all fish prompts, but it has been designed specifically to work with the amazing [starship prompt](https://starship.rs) and the [fish-async-prompt plugin](https://github.com/infused-kim/fish-async-prompt/) for the highest level of customization and performance.
+It should work with many fish prompts, but it has been designed specifically to work with the amazing [starship prompt](https://starship.rs) and the [fish-async-prompt plugin](https://github.com/infused-kim/fish-async-prompt/) for the highest level of customization and performance.
 
-You can find instructions on how to set up all three tools below.
+You can find [detailed instructions on how to set up all three tools below](#ideal-setup).
 
 ## Table Of Contents
 
@@ -94,15 +94,19 @@ You can also execute `sleep 4` to see command duration.
 
 #### 1.2.2. What to do if the prompt is not refreshing
 
-This plugin should work without any changes with any prompt that uses the `fish_prompt` and `fish_right_prompt` functions. But some prompts may do some "magic" that interferes with this plugin. This is most likely to happen with prompts that generate the prompt "asynchronously" or mention that they are "highly performant".
+This plugin should work without any changes with any prompt that uses the `fish_prompt` and `fish_right_prompt` functions.
+
+But some prompts may do some "magic" that interferes with this plugin. This is most likely to happen with prompts that generate the prompt "asynchronously" or mention that they are "highly performant".
 
 This plugin may need to be modified to accommodate the magic these prompts are doing (which I am, unfortunately, unlikely to do since I don't use these prompts).
 
 Try disabling your current prompt and check if the refresh works with the default fish prompt to verify that the plugin is set up correctly.
 
-After that, I would suggest trying the [starship](https://starship.rs) prompt and the [fish-async-prompt](https://github.com/infused-kim/fish-async-prompt/) plugin because this plugin is designed to work with them. Starship is extremely customizable and combined with the fish-async-prompt plugin it provides excellent performance.
+After that, I would suggest trying the [starship](https://starship.rs) prompt and the [fish-async-prompt](https://github.com/infused-kim/fish-async-prompt/) plugin because `fish-refresh-prompt-on-cmd` is designed to work with them. Starship is extremely customizable and combined with the fish-async-prompt plugin it provides excellent performance.
 
-You can find detailed instructions below.
+So, there are few reasons to use another prompt, such as [tide](https://github.com/IlanCosman/tide) or [hydro](https://github.com/jorgebucaran/hydro).
+
+You can find [detailed instructions on how to set up `starship`, `fish-async-prompt`, and `fish-refresh-prompt-on-cmd` below](#ideal-setup).
 
 #### 1.2.3. How to enable debug logging
 
@@ -114,10 +118,10 @@ set -g rpoc_debug_log_enabled 1
 set -g rpoc_debug_log_path $HOME/.cache/fish/fish_refresh_prompt_on_cmd.log
 ```
 
-Check the troubleshooting section below for a lot more details.
+Check the [troubleshooting section](#troubleshooting) below for a lot more details.
 
 > [!IMPORTANT]
-> Please be aware, that when the debug logs are enabled, it might cause the async-prompt to not repaint after the background process finishes. See the known issues section for more details and a workaround.
+> Please be aware, that when the debug logs are enabled, it might cause the async-prompt to not repaint after the background process finishes. See the [known issues section](#known-issues) for more details and a workaround.
 
 #### 1.2.4. How to configure your prompt to use `rpoc_time`
 
@@ -138,6 +142,8 @@ Be mindful that the last defined `fish_right_prompt` function will be the one th
 This plugin backs up your prompt functions to `__rpoc_orig_fish_prompt` and `__rpoc_orig_fish_right_prompt` and then replaces them with new functions that handle the refresh magic.
 
 You can check what the original prompt function is by running `functions __rpoc_orig_fish_prompt` and `functions __rpoc_orig_fish_right_prompt`.
+
+To better understand how fish prompts, fish-async-prompt and this plugin work, check the [troubleshooting section](#troubleshooting).
 
 #### 1.2.5. How to change the prompt output when the prompt is refreshing
 
@@ -196,6 +202,7 @@ set -g rpoc_cmd_duration_postfix ''
 set -g rpoc_cmd_duration_postfix_color normal
 ```
 
+<a name="ideal-setup"></a>
 ## 2. Ideal setup with starship prompt, fish-async-prompt, and fish-refresh-prompt-on-cmd
 
 In this section I will show you how to make [starship prompt](https://starship.rs), [fish-async-prompt](https://github.com/infused-kim/fish-async-prompt/), and this plugin work perfectly together for the best terminal experience.
@@ -407,7 +414,7 @@ fisher install infused-kim/fish-async-prompt
 Or manually by copying the [__async_prompt.fish](https://github.com/infused-kim/fish-async-prompt/blob/v1.2.0/conf.d/__async_prompt.fish) file into your `~/.config/fish/conf.d/` directory.
 
 > [!IMPORTANT]
-> One important detail is that `fish-refresh-prompt-on-cmd` needs to be loaded _AFTER_ `fish-async-prompt`. The default names of the files, `__async_prompt.fish` and `_refresh_prompt_on_cmd.fish` (notice the `_` vs the `__`), ensure this. But if you need to make sure they are loaded in the correct order.
+> One important detail is that `fish-refresh-prompt-on-cmd` needs to be loaded _AFTER_ `fish-async-prompt`. The default names of the files, `__async_prompt.fish` and `_refresh_prompt_on_cmd.fish` (notice the `_` vs the `__`), ensure this. But if you are installing it manually, you need to make sure they are loaded in the correct order.
 
 But before you install it, make sure to run `time fish_prompt` while you are in a git repo. Note how long it takes to render the prompt.
 
@@ -536,6 +543,7 @@ But if it's _not_ important to you and you only care about the time at which the
 
 You can also disable the right prompt refresh with `set -g rpoc_disable_refresh_right 1`.
 
+<a name="troubleshooting"></a>
 ## 3. Troubleshooting
 
 If something is not working as expected, here are some pointers on how you can debug and investigate the issue.
@@ -637,7 +645,7 @@ set -g async_prompt_debug_log_path $HOME/.cache/fish/prompt_debug.log
 After that, you can see what's going on with `tail -f $HOME/.cache/fish/prompt_debug.log`.
 
 > [!IMPORTANT]
-> Please be aware, that when the debug logs are enabled, it might cause the async-prompt to not repaint after the background process finishes. See the known issues section for more details and a workaround.
+> Please be aware, that when the debug logs are enabled, it might cause the async-prompt to not repaint after the background process finishes. See the [known issues section](#known-issues) for more details and a workaround.
 
 ### 3.5. Make sure you are using compatible versions of the plugins
 
@@ -675,6 +683,7 @@ I did this to empower you to be able to solve these problems yourself without ha
 
 But if you find a bug, please create an issue and I will do my best to fix it, but it depends on how much time I have available.
 
+<a name="known-issues"></a>
 ## 4. Known Issues
 
 ### 4.1. fish-async-prompt sometimes not repainting
