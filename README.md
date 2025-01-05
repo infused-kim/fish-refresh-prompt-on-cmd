@@ -396,7 +396,7 @@ Let's fix the slow prompt by using the [fish-async-prompt](https://github.com/in
 
 This plugin will help us display a minimal prompt immediately, render the full prompt in the background, and then refresh the prompt once the background process finishes. But your prompt will appear nearly instantly and you will be able to start typing the next command right away.
 
-It was created by [@acomagu](https://github.com/acomagu/fish-async-prompt), but it required a few changes to make it compatible with this plugin. Therefore, for now [you must use my fork which you can find here](https://github.com/infused-kim/fish-async-prompt/).
+It was created by [@acomagu](https://github.com/acomagu/fish-async-prompt), but it required a few changes to make it compatible with this plugin. Therefore, for now [you must use my fork which you can find here](https://github.com/infused-kim/fish-async-prompt/) until [PR #86](https://github.com/acomagu/fish-async-prompt/pull/86) is merged.
 
 You can install it with [fisher](https://github.com/jorgebucaran/fisher):
 
@@ -641,7 +641,7 @@ After that, you can see what's going on with `tail -f $HOME/.cache/fish/prompt_d
 
 ### 3.5. Make sure you are using compatible versions of the plugins
 
-For `fish-refresh-prompt-on-cmd` to work with `fish-async-prompt`, you must use a version that backs up the original prompt functions. My fork does this and I have submitted a PR to [@acomagu/fish-async-prompt](https://github.com/acomagu/fish-async-prompt) to add this feature, but it may not have been merged yet (and it may never get merged).
+For `fish-refresh-prompt-on-cmd` to work with `fish-async-prompt`, you must use a version that backs up the original prompt functions. My fork does this and I have submitted a [PR #86 to @acomagu/fish-async-prompt](https://github.com/acomagu/fish-async-prompt/pull/86) to add this feature, but it may not have been merged yet (and it may never get merged).
 
 ### 3.6. Investigate the plugin loading order
 
