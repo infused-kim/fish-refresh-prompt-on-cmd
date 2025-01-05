@@ -204,9 +204,22 @@ function __rpoc_execute_prompt_func --argument-names prompt_func_name
     # The output of the prompt we will display later
     set -l prompt_output
 
+    # Set refresh_enabled to 1 by default
+    set -l refresh_enabled 1
+
+    # Disable refresh for left prompt if configured
+    if test "$prompt_func_name" = "fish_prompt"; and __rpoc_is_config_enabled__disable_refresh_left
+        set refresh_enabled 0
+    end
+
+    # Disable refresh for right prompt if configured
+    if test "$prompt_func_name" = "fish_right_prompt"; and __rpoc_is_config_enabled__disable_refresh_right
+        set refresh_enabled 0
+    end
+
     # In refresh mode, but refresh right prompt is disabled...
     # Show the backup of the prompt
-    if test "$rpoc_is_refreshing" = 1; and __rpoc_is_config_enabled__disable_refresh_right
+    if test "$rpoc_is_refreshing" = 1; and test $refresh_enabled = 0
         __rpoc_log "Refresh disabled, using backup prompt"
 
         set prompt_output $$prompt_backup_var_name
