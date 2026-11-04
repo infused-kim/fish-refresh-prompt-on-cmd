@@ -164,6 +164,14 @@ In your prompt rendering functions (`fish_prompt` and `fish_right_prompt`), you 
 
 You can try this with the built-in `rpoc_time` function. Run it with `rpoc_is_refreshing=1 rpoc_time` and `rpoc_is_refreshing=0 rpoc_time` to see the difference.
 
+By default, the plugin keeps the full prompt on submitted lines. If you'd rather use your theme's transient prompt (for example, Starship's shorter prompt), add this to your fish config:
+
+```fish
+set -g rpoc_forward_final_rendering 1
+```
+
+This passes `--final-rendering` to your theme for each side that has refreshing enabled.
+
 #### 1.3.6. How to disable the automatic time right prompt
 
 If your shell has no right prompt enabled, then `rpoc_time` is automatically configured as your right prompt.
@@ -607,7 +615,7 @@ One important thing is that the `fish_prompt` and `fish_right_prompt` are only r
 
 The plugin backs up `fish_prompt` and `fish_right_prompt` and replaces them with its own wrappers. It also sets `fish_transient_prompt` to 1 so fish calls both wrappers with `--final-rendering` just before running a command.
 
-The wrappers pass that argument on to the original prompt functions and set `rpoc_is_refreshing` to 1 for that render. If you disabled refreshing on one side, the wrapper uses the last prompt it displayed on that side. On a regular render, `rpoc_is_refreshing` is 0.
+The wrappers use that argument to set `rpoc_is_refreshing` to 1 for that render. By default, they leave the argument out when calling the original prompt functions so themes like Starship still show the full prompt on submitted lines. Set `rpoc_forward_final_rendering` to 1 to let your theme handle the argument. If you disabled refreshing on one side, the wrapper uses the last prompt it displayed on that side. On a regular render, `rpoc_is_refreshing` is 0.
 
 It's not possible to refresh the prompt asynchronously because by the time the background process finishes, the next command might already be finished and the repaint would repaint the new prompt instead of the previous one.
 

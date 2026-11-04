@@ -98,8 +98,14 @@ end
 function __rpoc_execute_prompt_func --argument-names prompt_func_name
     set -e argv[1]
     set -l rpoc_is_refreshing 0
-    if contains -- --final-rendering $argv
+    set -l final_render_index (contains --index -- --final-rendering $argv)
+    if set -q final_render_index[1]
         set rpoc_is_refreshing 1
+        # Keep the full prompt by default. Forward the flag if the user
+        # wants their theme to choose how submitted prompts look.
+        if not __rpoc_is_config_enabled rpoc_forward_final_rendering
+            set -e argv[$final_render_index]
+        end
     end
 
     set -l prompt_backup_var_name __rpoc_prompt_backup_$prompt_func_name
