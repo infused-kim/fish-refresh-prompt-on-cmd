@@ -109,15 +109,17 @@ end
 
 
 function __rpoc_setup_compatibility_check
-    if functions -q __async_prompt_fire
-        __rpoc_log "Setting up for async prompt"
+    functions -q __async_prompt_config_functions
+    and test "$async_prompt_enable" != 0
+    or return
 
-        if not functions -q __async_prompt_orig_fish_prompt
-            echo "ERROR in fish-refresh-prompt-on-cmd: Could not load init due to incompatabilities with fish-async-prompt"
-            echo ""
-            echo "Please make sure..."
-            echo "  - That you are using a version of fish-async-prompt that backs up the original prompt functions. You can use my fork until this feature is integrated into acomagu's version: https://github.com/infused-kim/fish-async-prompt"
-            echo "  - You are loading fish-refresh-prompt-on-cmd AFTER fish-async-prompt"
+    for prompt_func in (__async_prompt_config_functions)
+        contains -- $prompt_func fish_prompt fish_right_prompt
+        or continue
+        if not functions -q __async_prompt_orig_$prompt_func
+            echo "fish-refresh-prompt-on-cmd could not find the original $prompt_func in fish-async-prompt." >&2
+            echo "Use the default branch of acomagu/fish-async-prompt and load it before fish-refresh-prompt-on-cmd." >&2
+            return
         end
     end
 end
