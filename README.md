@@ -63,9 +63,11 @@ You can find [detailed instructions on how to set up all three tools below](#ide
 
 ### 1.1. Compatibility
 
-This plugin has been tested with fish v3.7.1 as well as v4.0b1 on macOS and Linux. Prior versions may also work, but are not tested.
+Version 2.0.0 requires fish 4.1 or newer, which implemented the [transient prompt feature](https://fishshell.com/docs/current/prompt.html#transient-prompt) that makes this plugin much simpler.
 
-It has also been tested with the default fish prompt, as well as starship prompt v1.21.1 (and should work with any version).
+If you use an older version of fish, you can stick with `v1.0.0`.
+
+It has also been tested with the default fish prompt, as well as starship prompt v1.27.0 (and should work with any version).
 
 Other non-async prompts may work, but have not been tested. Async prompts, such as [tide](https://github.com/IlanCosman/tide) or [hydro](https://github.com/jorgebucaran/hydro), have not been tested and are likely to _not_ work due to their async magic.
 
@@ -84,7 +86,7 @@ fisher install infused-kim/fish-refresh-prompt-on-cmd
 But it's recommended to pin a specific version to ensure future updates don't break compatibility. You can [check the tags for the latest version](https://github.com/infused-kim/fish-refresh-prompt-on-cmd/tags) and then install with:
 
 ```fish
-fisher install infused-kim/fish-refresh-prompt-on-cmd@vX.Y
+fisher install infused-kim/fish-refresh-prompt-on-cmd@vX.Y.Z
 ```
 
 Alternatively, you can install it manually by copying the [conf.d/_refresh_prompt_on_cmd.fish](conf.d/_refresh_prompt_on_cmd.fish) to your `~/.config/fish/conf.d/` directory.
@@ -161,6 +163,14 @@ To better understand how fish prompts, fish-async-prompt and this plugin work, c
 In your prompt rendering functions (`fish_prompt` and `fish_right_prompt`), you can check the `rpoc_is_refreshing` variable. It will be `1` when the prompt is refreshing after you press enter and `0` when a regular prompt is rendered.
 
 You can try this with the built-in `rpoc_time` function. Run it with `rpoc_is_refreshing=1 rpoc_time` and `rpoc_is_refreshing=0 rpoc_time` to see the difference.
+
+By default, the plugin keeps the full prompt on submitted lines. If you'd rather use your theme's transient prompt (for example, Starship's shorter prompt), add this to your fish config:
+
+```fish
+set -g rpoc_forward_final_rendering 1
+```
+
+This passes `--final-rendering` to your theme for each side that has refreshing enabled.
 
 #### 1.3.6. How to disable the automatic time right prompt
 
@@ -546,7 +556,7 @@ function fish_right_prompt
 end
 ```
 
-The second issue is that the left prompt is also run asynchronously before the command is executed and it contains the slow modules like git status. If it's important for you to be able to see the refreshed git status at the time the command was executed, then perhaps the small slowdown is worth it for you.
+The second issue is that the left prompt is also run synchronously before the command is executed and it contains the slow modules like git status. If it's important for you to be able to see the refreshed git status at the time the command was executed, then perhaps the small slowdown is worth it for you.
 
 But if it's _not_ important to you and you only care about the time at which the command was executed, then you can disable the left prompt refresh with `set -g rpoc_disable_refresh_left 1` in your `~/.config/fish/conf.d/05-init-prompt.fish` file.
 
@@ -603,31 +613,9 @@ One important thing is that the `fish_prompt` and `fish_right_prompt` are only r
 
 ### 3.3. Understand how fish-refresh-prompt-on-cmd works
 
-The idea of this plugin is quite simple...
+The plugin backs up `fish_prompt` and `fish_right_prompt` and replaces them with its own wrappers. It also sets `fish_transient_prompt` to 1 so fish calls both wrappers with `--final-rendering` just before running a command.
 
-- Detect when a command is entered
-- Set a variable `rpoc_is_refreshing` to 1 to allow the prompt functions to determine whether the prompt is being rendered for the first time or refreshing
-- Ask fish to repaint the prompt
-- Wait for the repaint to finish to set `rpoc_is_refreshing` back to 0
-- Execute the command
-
-That sounds easy enough, right? The `fish_preexec`, and `fish_postexec` events seem perfect for the job.
-
-Unfortunately, reality is a bit more complicated.
-
-The `commandline -f repaint` command doesn't work in `fish_preexec`. So, this event can't be used to trigger the repaint at all.
-
-On top of that the `fish_postexec` and `fish_preexec` events are not fired when an empty command is entered and therefore can't even be used to reset the `rpoc_is_refreshing` variable back to 0.
-
-Instead, I am using a bit of a hack...
-
-- I backup the current `fish_prompt` and `fish_right_prompt` functions to `__rpoc_orig_fish_prompt` and `__rpoc_orig_fish_right_prompt` and replace them with my own functions
-- I bind a function to be executed when the `enter` key is pressed.
-- There I set `rpoc_is_refreshing` to 1
-- Then I ask fish to repaint the prompt
-- Fish calls my replacement `fish_prompt` and `fish_right_prompt` functions where I call the backed-up, original functions
-- At the end of `fish_right_prompt` I set `rpoc_is_refreshing` back to 0
-- Then the command is executed
+The wrappers use that argument to set `rpoc_is_refreshing` to 1 for that render. By default, they leave the argument out when calling the original prompt functions so themes like Starship still show the full prompt on submitted lines. Set `rpoc_forward_final_rendering` to 1 to let your theme handle the argument. If you disabled refreshing on one side, the wrapper uses the last prompt it displayed on that side. On a regular render, `rpoc_is_refreshing` is 0.
 
 It's not possible to refresh the prompt asynchronously because by the time the background process finishes, the next command might already be finished and the repaint would repaint the new prompt instead of the previous one.
 
